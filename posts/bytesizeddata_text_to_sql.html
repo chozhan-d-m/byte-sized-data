@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Text-to-SQL: The Promise, the Reality, and When It Actually Works — Byte Sized Data</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #F7F4EF;
+    --ink: #17140F;
+    --accent: #1A4A8A;
+    --danger-light: #FAEAEA;
+    --success-light: #E8F5EE;
+    --warning-light: #FEF3E2;
+    --muted: #6B6460;
+    --rule: #D6D0C8;
+    --card: #EDEAE3;
+    --header:#ed7b08;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 18px;
+    line-height: 1.78;
+  }
+
+  .wrapper {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 60px 32px 100px;
+  }
+
+  /* Masthead */
+  .masthead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 14px;
+    margin-bottom: 48px;
+  }
+  .masthead-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .masthead-date {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* Title */
+  .rubric {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+    display: block;
+  }
+  h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(2rem, 5vw, 2.75rem);
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 20px;
+  }
+  h1 em { font-style: italic; color: var(--accent); }
+
+  .deck {
+    font-size: 1.05rem;
+    color: var(--muted);
+    font-style: italic;
+    border-left: 3px solid var(--accent);
+    padding-left: 16px;
+    line-height: 1.6;
+    margin-bottom: 40px;
+  }
+
+  /* Body */
+  p { margin-bottom: 1.4em; }
+
+  h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 2.4em 0 0.6em;
+  }
+
+  hr.rule {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 2.5em 0;
+  }
+
+  code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82em;
+    background: var(--card);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--accent);
+  }
+
+  /* Fit matrix */
+  .matrix {
+    margin: 1.5em 0 2em;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--rule);
+  }
+  .matrix-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    background: var(--header);
+    color: var(--ink);
+    padding: 10px 18px;
+    font-family: Georgia;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    gap: 8px;
+    font-weight: bold;
+  }
+  .matrix-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    padding: 12px 18px;
+    gap: 8px;
+    align-items: center;
+    border-bottom: 1px solid var(--rule);
+    background: white;
+    font-size: 0.88rem;
+  }
+  .matrix-row:last-child { border-bottom: none; }
+  .matrix-row:nth-child(even) { background: var(--bg); }
+  .matrix-scenario { font-family: 'Source Serif 4', serif; color: var(--ink); font-style: italic; }
+  .matrix-action {
+    font-family: Georgia;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+
+  .v-yes  { background: var(--success-light); color: var(--ink); }
+  .v-no   { background: var(--danger-light);  color: var(--ink); }
+  .v-maybe{ background: var(--warning-light); color: var(--ink); }
+  .matrix-note { font-size: 0.78rem; color: var(--ink); font-family: Georgia, 'Times New Roman', Times, serif; }
+
+  @media (max-width: 540px) {
+    .wrapper { padding: 36px 20px 80px; }
+    .matrix-header, .matrix-row { grid-template-columns: 1fr 1fr; }
+    .matrix-note { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <div class="masthead">
+    <span class="masthead-name">Byte Sized Data</span>
+    <span class="masthead-date">April 2026</span>
+  </div>
+
+  <h1>Text-to-SQL:<br/>The Promise, the Reality,<br/>and When It Actually Works</h1>
+
+  <h2>When it actually works and when to walk away</h2>
+
+
+  <div class="matrix">
+    <div class="matrix-header">
+      <span>Scenario</span>
+      <span>Action</span>
+      <span>Why</span>
+    </div>
+    <div class="matrix-row">
+      <span class="matrix-scenario">Narrow domain, 5–10 curated views, well-named columns</span>
+      <span class="matrix-action v-yes">Use it</span>
+      <span class="matrix-note">LLM has enough context; failure surface is small</span>
+    </div>
+    <div class="matrix-row">
+      <span class="matrix-scenario">Self-service analytics for business users on clean warehouse</span>
+      <span class="matrix-action v-yes">Use it</span>
+      <span class="matrix-note">High value, low risk if semantic layer is in place</span>
+    </div>
+    <div class="matrix-row">
+      <span class="matrix-scenario">100+ table raw schema, abbreviated names, no documentation</span>
+      <span class="matrix-action v-no">Avoid</span>
+      <span class="matrix-note">Model will hallucinate and fail unpredictably</span>
+    </div>
+    <div class="matrix-row">
+      <span class="matrix-scenario">Financial or executive reporting with no human review step</span>
+      <span class="matrix-action v-no">Avoid</span>
+      <span class="matrix-note">Silent wrong answers are unacceptable here</span>
+    </div>
+    <div class="matrix-row">
+      <span class="matrix-scenario">Developer / analyst copilot with SQL review before execution</span>
+      <span class="matrix-action v-yes">Use it</span>
+      <span class="matrix-note">Human in the loop catches the hard failure cases</span>
+    </div>
+    <div class="matrix-row">
+      <span class="matrix-scenario">Complex analytics: window functions, multi-level GROUP BY</span>
+      <span class="matrix-action v-maybe">With caution</span>
+      <span class="matrix-note">Performance drops sharply; needs validator layer</span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
